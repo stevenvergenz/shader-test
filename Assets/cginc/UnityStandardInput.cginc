@@ -19,11 +19,11 @@
 #endif
 
 //---------------------------------------
-half4       _Color;
+half4       _BaseColorFactor;
 half        _Cutoff;
 
-sampler2D   _MainTex;
-float4      _MainTex_ST;
+sampler2D   _BaseColorTex;
+float4      _BaseColorTex_ST;
 
 sampler2D   _DetailAlbedoMap;
 float4      _DetailAlbedoMap_ST;
@@ -72,7 +72,7 @@ struct VertexInput
 float4 TexCoords(VertexInput v)
 {
     float4 texcoord;
-    texcoord.xy = TRANSFORM_TEX(v.uv0, _MainTex); // Always source from uv0
+    texcoord.xy = TRANSFORM_TEX(v.uv0, _BaseColorTexture); // Always source from uv0
     texcoord.zw = TRANSFORM_TEX(((_UVSec == 0) ? v.uv0 : v.uv1), _DetailAlbedoMap);
     return texcoord;
 }
@@ -84,7 +84,7 @@ half DetailMask(float2 uv)
 
 half3 Albedo(float4 texcoords)
 {
-    half3 albedo = _Color.rgb * tex2D (_MainTex, texcoords.xy).rgb;
+    half3 albedo = _BaseColorFactor.rgb * tex2D (_BaseColorTexture, texcoords.xy).rgb;
 #if _DETAIL
     #if (SHADER_TARGET < 30)
         // SM20: instruction count limitation
@@ -110,9 +110,9 @@ half3 Albedo(float4 texcoords)
 half Alpha(float2 uv)
 {
 #if defined(_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A)
-    return _Color.a;
+    return _BaseColorFactor.a;
 #else
-    return tex2D(_MainTex, uv).a * _Color.a;
+    return tex2D(_BaseColorTexture, uv).a * _BaseColorFactor.a;
 #endif
 }
 
@@ -134,7 +134,7 @@ half4 SpecularGloss(float2 uv)
 #ifdef _SPECGLOSSMAP
     #if defined(_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A)
         sg.rgb = tex2D(_SpecGlossMap, uv).rgb;
-        sg.a = tex2D(_MainTex, uv).a;
+        sg.a = tex2D(_BaseColorTexture, uv).a;
     #else
         sg = tex2D(_SpecGlossMap, uv);
     #endif
@@ -142,7 +142,7 @@ half4 SpecularGloss(float2 uv)
 #else
     sg.rgb = _SpecColor.rgb;
     #ifdef _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
-        sg.a = tex2D(_MainTex, uv).a * _GlossMapScale;
+        sg.a = tex2D(_BaseColorTexture, uv).a * _GlossMapScale;
     #else
         sg.a = _Glossiness;
     #endif
@@ -157,7 +157,7 @@ half2 MetallicGloss(float2 uv)
 #ifdef _METALLICGLOSSMAP
     #ifdef _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
         mg.r = tex2D(_MetallicGlossMap, uv).r;
-        mg.g = tex2D(_MainTex, uv).a;
+        mg.g = tex2D(_BaseColorTexture, uv).a;
     #else
         mg = tex2D(_MetallicGlossMap, uv).ra;
     #endif
@@ -165,7 +165,7 @@ half2 MetallicGloss(float2 uv)
 #else
     mg.r = _Metallic;
     #ifdef _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
-        mg.g = tex2D(_MainTex, uv).a * _GlossMapScale;
+        mg.g = tex2D(_BaseColorTexture, uv).a * _GlossMapScale;
     #else
         mg.g = _Glossiness;
     #endif
